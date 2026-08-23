@@ -1,0 +1,2 @@
+[console_scripts]
+scope-auditor = auditor.cli.main:app

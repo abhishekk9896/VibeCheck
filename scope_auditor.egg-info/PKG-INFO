@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: scope-auditor
+Version: 0.1.0
+Summary: A Scope & Quality Auditor Agent for Python projects.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: typer>=0.12.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pytest-json-report>=1.5.0
+Requires-Dist: langgraph>=0.0.30
+Requires-Dist: langchain-core>=0.1.30
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: ruff>=0.3.0; extra == "dev"

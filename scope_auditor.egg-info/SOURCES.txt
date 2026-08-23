@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+auditor/__init__.py
+auditor/cli/__init__.py
+auditor/cli/main.py
+auditor/core/__init__.py
+auditor/core/scope_parser.py
+auditor/runners/__init__.py
+scope_auditor.egg-info/PKG-INFO
+scope_auditor.egg-info/SOURCES.txt
+scope_auditor.egg-info/dependency_links.txt
+scope_auditor.egg-info/entry_points.txt
+scope_auditor.egg-info/requires.txt
+scope_auditor.egg-info/top_level.txt
