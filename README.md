@@ -1,4 +1,3 @@
-Set-Content -Path "README.md" -Value @'
 # 🛡️ VibeCheck (`scope-auditor`)
 
 > **LangGraph-powered Scope & Quality Auditor Agent for Vibe-Coded Python Projects.**
@@ -23,8 +22,16 @@ Set-Content -Path "README.md" -Value @'
 ---
 
 ## 🏗️ Agent Architecture
-
-[ Ingest SCOPE.md & Map AST ] ──> [ Subprocess Lint & Test Audit ]│▼[ Clean Execution / Target Met ] <── [ Analyze Scope Drift ]│                                 ││                                 ▼│                     [ Needs Remediation? ]│                                 ││                                 ▼( END / Output ) <──────── [ Patch Engine (Self-Healing) ]
+[ Ingest SCOPE.md & Map AST ] ──> [ Subprocess Lint & Test Audit ]
+│
+▼
+[ Clean Execution / Target Met ] <── [ Analyze Scope Drift ]
+│                                 │
+│                                 ▼
+│                     [ Needs Remediation? ]
+│                                 │
+│                                 ▼
+( END / Output ) <──────── [ Patch Engine (Self-Healing) ]
 ---
 
 ## 🚀 Quick Start
@@ -37,11 +44,27 @@ Clone the repository and install the project in editable mode:
 git clone [https://github.com/abhishekk9896/VibeCheck.git](https://github.com/abhishekk9896/VibeCheck.git)
 cd VibeCheck
 pip install -e .
+
+# Optional: Set OpenAI key for full LLM self-healing capability
+export OPENAI_API_KEY="your-openai-api-key"
+
 2. Environment Setup (Optional)VibeCheck supports OpenAI models for LLM remediation, but gracefully falls back to deterministic local rule patching if no key is present:Bash# Optional: Set OpenAI key for full LLM self-healing capability
 export OPENAI_API_KEY="your-openai-api-key"
-3. Running an AuditAudit the current workspace against SCOPE.md:Bashscope-auditor audit --root .
-Export detailed Markdown and HTML executive reports:Bashscope-auditor audit --root . --export
-📋 CLI Usage SummaryFlagShortDefaultDescription--root-r.Target project root directory to audit--scope-sSCOPE.mdPath to the spec file--export-eFalseGenerate audit_report.md and audit_report.html📂 Project StructureVibeCheck/
+
+3. Running an AuditAudit the current workspace against SCOPE.md:
+	Bashscope-auditor audit --root .
+
+   Export detailed Markdown and HTML executive reports:
+	Bashscope-auditor audit --root . --export
+📋 CLI Usage Summary
+	Flag,Short,Default,Description
+--root,-r,.,Target project root directory to audit
+--scope,-s,SCOPE.md,Path to the spec file
+--export,-e,False,Generate audit_report.md and audit_report.html
+
+📂 Project Structure
+
+VibeCheck/
 ├── auditor/
 │   ├── cli/             # Typer CLI entrypoints & Rich console interface
 │   ├── core/            # LangGraph state graph, AST mappers, & patch engine
@@ -50,4 +73,7 @@ Export detailed Markdown and HTML executive reports:Bashscope-auditor audit --ro
 ├── tests/               # Test suites executed by the agent
 ├── pyproject.toml       # Package definition & CLI scripts
 └── SCOPE.md             # Project scope specification
-📄 LicenseDistributed under the MIT License. See LICENSE for more information.'@ -Encoding UTF8
+
+📄 License	
+
+Distributed under the MIT License. See LICENSE for more information.
