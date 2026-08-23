@@ -22,17 +22,14 @@
 ---
 
 ## 🏗️ Agent Architecture
-[ Ingest SCOPE.md & Map AST ] ──> [ Subprocess Lint & Test Audit ]
-│
-▼
-[ Clean Execution / Target Met ] <── [ Analyze Scope Drift ]
-│                                 │
-│                                 ▼
-│                     [ Needs Remediation? ]
-│                                 │
-│                                 ▼
-( END / Output ) <──────── [ Patch Engine (Self-Healing) ]
----
+```mermaid
+flowchart TD
+    A[Ingest SCOPE.md & Map AST] --> B[Subprocess Lint & Test Audit]
+    B --> C[Analyze Scope Drift]
+    C --> D{Needs Remediation?}
+    D -- Yes --> E[Patch Engine / Self-Healing]
+    E --> B
+    D -- No --> F[Output Summary & Export Reports]
 
 ## 🚀 Quick Start
 
