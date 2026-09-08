@@ -25,3 +25,6 @@ dev = [
 
 [project.scripts]
 scope-auditor = "auditor.cli.main:app"
+
+[tool.setuptools.packages.find]
+include = ["auditor*"]

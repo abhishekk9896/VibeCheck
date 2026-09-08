@@ -42,13 +42,13 @@
 
 ## 🛡️ Security & OWASP Alignment
 
-VibeCheck incorporates a dedicated security layer (`scope_auditor/security/`) addressing key OWASP Agentic Security (ASI) & LLM Top 10 vulnerabilities:
+VibeCheck incorporates a dedicated security layer (`auditor/security/`), wired directly into the ingest and remediation nodes of the LangGraph agent, addressing key OWASP Agentic Security (ASI) & LLM Top 10 vulnerabilities:
 
-* **`prompt_injection_guard.py` (ASI01 / LLM01):** Detects and redacts indirect prompt injection attempts inside code diffs or specifications.
+* **`prompt_injection_guard.py` (ASI01 / LLM01):** `SCOPE.md` is screened for indirect prompt-injection directives before ingestion, and any match is redacted and logged.
 * **`system_prompt_protector.py` (LLM07):** Wraps context in strict boundaries and blocks prompt leakage attempts.
-* **`output_sanitizer.py` (ASI03 / ASI05):** Validates generated Python syntax via AST before disk writes and enforces `is_safe_path` directory traversal checks.
-* **`scope_budget_guard.py` (ASI02 / LLM06):** Enforces execution limits and iteration circuit breakers to prevent runaway agent loops.
-* **`audit_logger.py`:** Generates structured JSON security event logs for complete auditability.
+* **`output_sanitizer.py` (ASI03 / ASI05):** Every remediation target path is checked with `is_safe_path` before writing, and every LLM-generated patch is validated with `validate_python_patch` (AST syntax check) before it's ever written to disk.
+* **`scope_budget_guard.py` (ASI02 / LLM06):** A `ScopeAuditBudget` instance is created per audit run and enforces both the max files patched and the max self-healing graph iterations — replacing what used to be a hardcoded loop limit.
+* **`audit_logger.py`:** Every blocked path traversal, rejected patch, budget breach, and applied fix is written as a structured JSON event to `scope_auditor_security.log` for auditability.
 
 ---
 
@@ -103,7 +103,7 @@ scope-auditor audit --root . --export
 
 ```text
 VibeCheck/
-├── scope_auditor/
+├── auditor/
 │   ├── cli/             # Typer CLI entrypoints & Rich console interface
 │   ├── core/            # LangGraph state graph, AST mappers, & patch engine
 │   ├── runners/         # Subprocess runners for Ruff and Pytest

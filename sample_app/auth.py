@@ -1,5 +1,3 @@
-import os
-
 def login(username, password):
     if username == "admin" and password == "secret123":
         return {"status": "success", "token": "fake_token_123"}

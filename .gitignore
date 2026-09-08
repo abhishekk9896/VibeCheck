@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+audit_report.md
+audit_report.html
+scope_auditor_security.log

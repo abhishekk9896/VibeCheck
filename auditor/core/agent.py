@@ -6,6 +6,13 @@ from auditor.core.codebase_mapper import CodebaseMapper, FileASTMap
 from auditor.core.drift_analyzer import DriftAnalyzer, ScopeDriftReport
 from auditor.runners.tool_runners import SubprocessRunner, LintIssue, TestFailure
 from auditor.core.patch_engine import PatchEngine
+from auditor.security import (
+    ScopeAuditBudget,
+    sanitize_diff_for_auditing,
+    log_audit_event,
+)
+
+
 
 
 class AuditorState(TypedDict):
@@ -25,6 +32,18 @@ class AuditorState(TypedDict):
 def ingest_and_map_node(state: AuditorState) -> dict:
     parser = ScopeParser(state["scope_path"])
     requirements = parser.parse()
+
+    # SCOPE.md is untrusted input in principle (e.g. shared/reviewed specs) —
+    # screen it for prompt-injection style directives before it ever reaches
+    # the remediation LLM prompt (ASI01 / LLM01 mitigation).
+    from pathlib import Path
+    scope_text = Path(state["scope_path"]).read_text(encoding="utf-8") if Path(state["scope_path"]).exists() else ""
+    cleaned = sanitize_diff_for_auditing(state["scope_path"], scope_text)
+    if cleaned.is_suspicious:
+        log_audit_event(
+            "prompt_injection_flagged_in_scope",
+            {"scope_path": state["scope_path"], "reasons": cleaned.flagged_reasons},
+        )
 
     mapper = CodebaseMapper(state["root_dir"])
     ast_maps = mapper.scan()
@@ -60,43 +79,62 @@ def analyze_drift_node(state: AuditorState) -> dict:
     }
 
 
-def remediation_node(state: AuditorState) -> dict:
-    """Generates and applies LLM code patches to fix failing tests and lint errors."""
-    patcher = PatchEngine(state["root_dir"])
-    
-    fixed_code = patcher.generate_remediation_patch(
-        failures=state["test_failures"],
-        lint_issues=state["lint_issues"],
-        requirements=state["requirements"],
-    )
+def make_remediation_node(budget: ScopeAuditBudget):
+    def remediation_node(state: AuditorState) -> dict:
+        """Generates and applies LLM code patches to fix failing tests and lint
+        errors, targeting whichever files the audit actually flagged rather
+        than a single hardcoded path."""
+        patcher = PatchEngine(state["root_dir"], budget=budget)
 
-    if fixed_code:
-        patcher.apply_fix(fixed_code, "sample_app/auth.py")
+        target_files = patcher.determine_target_files(
+            failures=state["test_failures"],
+            lint_issues=state["lint_issues"],
+        )
 
-    return {
-        "iterations": state.get("iterations", 0) + 1,
-        "status": "remediated",
-    }
+        patched_any = False
+        for target_file in target_files:
+            fixed_code = patcher.generate_remediation_patch(
+                target_file=target_file,
+                failures=state["test_failures"],
+                lint_issues=state["lint_issues"],
+                requirements=state["requirements"],
+            )
+            if fixed_code and patcher.apply_fix(fixed_code, target_file):
+                patched_any = True
+
+        return {
+            "iterations": state.get("iterations", 0) + 1,
+            "status": "remediated" if patched_any else "remediation_skipped",
+        }
+
+    return remediation_node
 
 
-def check_audit_health(state: AuditorState) -> str:
-    failures = len(state["test_failures"])
-    lints = len(state["lint_issues"])
-    iterations = state.get("iterations", 0)
+def make_check_audit_health(budget: ScopeAuditBudget):
+    def check_audit_health(state: AuditorState) -> str:
+        failures = len(state["test_failures"])
+        lints = len(state["lint_issues"])
+        iterations = state.get("iterations", 0)
 
-    # Stop after 3 remediation iterations or if clean
-    if (failures > 0 or lints > 0) and iterations < 3:
-        return "needs_remediation"
-    return "clean"
+        if (failures > 0 or lints > 0) and iterations < budget.max_graph_iterations:
+            return "needs_remediation"
+        return "clean"
+
+    return check_audit_health
 
 
 def build_auditor_graph():
+    # Fresh budget guard per graph build: caps both the number of files
+    # patched and the number of self-healing iterations for this audit run
+    # (ASI02 / LLM06 mitigation), replacing the previous hardcoded "3".
+    budget = ScopeAuditBudget(max_files_to_audit=20, max_graph_iterations=3)
+
     workflow = StateGraph(AuditorState)
 
     workflow.add_node("ingest_and_map", ingest_and_map_node)
     workflow.add_node("run_audits", run_audits_node)
     workflow.add_node("analyze_drift", analyze_drift_node)
-    workflow.add_node("remediate", remediation_node)
+    workflow.add_node("remediate", make_remediation_node(budget))
 
     workflow.set_entry_point("ingest_and_map")
     workflow.add_edge("ingest_and_map", "run_audits")
@@ -104,7 +142,7 @@ def build_auditor_graph():
 
     workflow.add_conditional_edges(
         "analyze_drift",
-        check_audit_health,
+        make_check_audit_health(budget),
         {
             "needs_remediation": "remediate",
             "clean": END,

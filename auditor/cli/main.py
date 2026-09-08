@@ -15,9 +15,46 @@ app = typer.Typer(
 
 
 @app.command()
-def init():
+def init(
+    root_dir: str = typer.Option(
+        ".",
+        "--root",
+        "-r",
+        help="Target project root directory",
+    ),
+):
     """Initializes a baseline SCOPE.md if missing."""
-    console.print(Panel("[bold green]Scope Auditor CLI initialized successfully.[/bold green]", title="Scope Auditor"))
+    from pathlib import Path
+
+    root = Path(root_dir).resolve()
+    scope_file = root / "SCOPE.md"
+
+    if scope_file.exists():
+        console.print(
+            Panel(
+                f"[bold yellow]SCOPE.md already exists.[/bold yellow]\n"
+                f"Path: {scope_file}",
+                title="Scope Auditor",
+            )
+        )
+        return
+
+    root.mkdir(parents=True, exist_ok=True)
+
+    scope_file.write_text(
+        "# Project Scope\n\n"
+        "## [REQ-01] Project Requirements\n\n"
+        "- Add project requirements here\n",
+        encoding="utf-8",
+    )
+
+    console.print(
+        Panel(
+            f"[bold green]SCOPE.md created successfully.[/bold green]\n"
+            f"Path: {scope_file}",
+            title="Scope Auditor",
+        )
+    )
 
 
 @app.command()
@@ -41,6 +78,7 @@ def audit(
         "drift_report": None,
         "iterations": 0,
         "status": "init",
+        "criterion_results": [],
     }
 
     graph = build_auditor_graph()

@@ -11,7 +11,7 @@
 | Metric | Value |
 | :--- | :---: |
 | **Parsed Requirements** | `1` |
-| **AST Mapped Files** | `15` |
+| **AST Mapped Files** | `59` |
 | **Ruff Lint Issues** | `0` |
 | **Pytest Pass Rate** | `3/3` |
 | **Unimplemented Requirements** | `0` |
